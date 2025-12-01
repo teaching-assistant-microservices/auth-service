@@ -7,6 +7,15 @@ export interface IUsersClient {
     createdAt: Date;
     updatedAt: Date;
   } | null>;
+
+  getUserById(id: string): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    password: string;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null>;
 }
 
 export const IUsersClient = Symbol('IUsersClient');

@@ -7,7 +7,7 @@ export interface IJwtService {
 
   generateRefreshToken(
     userId: string,
-  ): { token: string; expiresAt: Date };
+  ): { token: string; jti: string; expiresAt: Date };
 
   verifyToken(token: string): any;
 

@@ -39,37 +39,57 @@ export class RefreshTokenUseCase {
     }
 
     const userId = decoded.sub;
+    const jti = decoded.jti;
 
-    // 3. Hashear el refresh token para buscar en BD
-    const refreshTokenHash = await this.bcryptService.hash(refreshToken);
-
-    // 4. Buscar refresh token en base de datos (verificar que exista y no esté revocado)
-    // Nota: Aquí habría que comparar con todos los hashes, pero por simplicidad
-    // podemos hacer una búsqueda diferente. En producción, usar un método más eficiente.
-
-    // Para simplificar, vamos a verificar que el usuario exista
-    const user = await this.usersClient.getUserByEmail(decoded.email || '');
-
-    if (!user || user.id !== userId) {
-      throw new UnauthorizedException('Invalid refresh token');
+    if (!jti) {
+      throw new UnauthorizedException('Invalid refresh token - missing jti');
     }
 
-    // 5. Generar nuevo access token
-    const { token: newAccessToken, jti, expiresIn } =
+    // 3. Buscar refresh token en base de datos por jti
+    const storedToken = await this.refreshTokensRepository.findByJti(jti);
+
+    if (!storedToken) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+
+    // 4. Verificar que no esté revocado
+    if (storedToken.revoked) {
+      throw new UnauthorizedException('Refresh token has been revoked');
+    }
+
+    // 5. Verificar que no esté expirado
+    if (storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token has expired');
+    }
+
+    // 6. Verificar que el userId coincida
+    if (storedToken.userId !== userId) {
+      throw new UnauthorizedException('Invalid refresh token - user mismatch');
+    }
+
+    // 7. Obtener información del usuario
+    const user = await this.usersClient.getUserById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // 8. Generar nuevo access token
+    const { token: newAccessToken, jti: accessJti, expiresIn } =
       this.jwtService.generateAccessToken(user.id, user.email, 'user');
 
-    // 6. Generar nuevo refresh token (rotación de refresh tokens)
-    const { token: newRefreshToken, expiresAt } =
+    // 9. Generar nuevo refresh token (rotación de refresh tokens)
+    const { token: newRefreshToken, jti: newRefreshJti, expiresAt } =
       this.jwtService.generateRefreshToken(user.id);
 
-    // 7. Hashear y guardar nuevo refresh token
+    // 10. Hashear y guardar nuevo refresh token
     const newRefreshTokenHash = await this.bcryptService.hash(newRefreshToken);
 
     const refreshTokenEntity = new RefreshToken(
       randomUUID(),
       user.id,
       newRefreshTokenHash,
-      jti,
+      newRefreshJti,
       expiresAt,
       new Date(),
       false,
@@ -78,7 +98,10 @@ export class RefreshTokenUseCase {
 
     await this.refreshTokensRepository.save(refreshTokenEntity);
 
-    // 8. Retornar nuevos tokens
+    // 11. Revocar el refresh token anterior (rotación)
+    await this.refreshTokensRepository.revokeByJti(jti);
+
+    // 12. Retornar nuevos tokens
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,

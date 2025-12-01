@@ -61,13 +61,16 @@ export class JwtService {
 
   generateRefreshToken(userId: string): {
     token: string;
+    jti: string;
     expiresAt: Date;
   } {
+    const jti = randomUUID();
     const iat = Math.floor(Date.now() / 1000);
 
     const payload = {
       sub: userId,
       type: 'refresh',
+      jti,
       iat,
     };
 
@@ -81,7 +84,7 @@ export class JwtService {
     // 7 días en milisegundos
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    return { token, expiresAt };
+    return { token, jti, expiresAt };
   }
 
   verifyToken(token: string): any {

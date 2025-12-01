@@ -25,4 +25,23 @@ export class UsersClientAdapter implements IUsersClient {
       return null;
     }
   }
+
+  async getUserById(id: string): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    password: string;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null> {
+    try {
+      const user = await lastValueFrom(
+        this.client.send({ cmd: 'get_user_by_id' }, { id }),
+      );
+
+      return user || null;
+    } catch (error) {
+      return null;
+    }
+  }
 }

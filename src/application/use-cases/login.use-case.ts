@@ -55,7 +55,7 @@ export class LoginUseCase {
     );
 
     // 4. Generar refresh token (RS256, 7 días)
-    const { token: refreshTokenStr, expiresAt } =
+    const { token: refreshTokenStr, jti: refreshJti, expiresAt } =
       this.jwtService.generateRefreshToken(user.id);
 
     // 5. Hashear refresh token para almacenarlo
@@ -66,7 +66,7 @@ export class LoginUseCase {
       randomUUID(),
       user.id,
       refreshTokenHash,
-      jti,
+      refreshJti,
       expiresAt,
       new Date(),
       false,
