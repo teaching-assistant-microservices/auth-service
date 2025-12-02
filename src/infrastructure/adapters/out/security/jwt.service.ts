@@ -13,15 +13,19 @@ export class JwtService {
 
   constructor() {
     const projectRoot = process.cwd();
-    const keysPath = path.join(
-      projectRoot,
-      'src',
-      'infrastructure',
-      'adapters',
-      'out',
-      'security',
-      'keys',
-    );
+    // En producción (Docker), las claves están en /app/keys
+    // En desarrollo, están en src/infrastructure/adapters/out/security/keys
+    const keysPath = fs.existsSync(path.join(projectRoot, 'keys'))
+      ? path.join(projectRoot, 'keys')
+      : path.join(
+          projectRoot,
+          'src',
+          'infrastructure',
+          'adapters',
+          'out',
+          'security',
+          'keys',
+        );
     this.privateKey = fs.readFileSync(path.join(keysPath, 'jwt-private.key'));
     this.publicKey = fs.readFileSync(path.join(keysPath, 'jwt-public.key'));
   }
