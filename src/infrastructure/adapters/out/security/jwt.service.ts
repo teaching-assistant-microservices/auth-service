@@ -1,33 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
-import * as fs from 'fs';
-import * as path from 'path';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class JwtService {
-  private readonly privateKey: Buffer;
-  private readonly publicKey: Buffer;
+  private readonly jwtSecret: string;
   private readonly accessTokenExpiration = '15m'; // 15 minutos
   private readonly refreshTokenExpiration = '7d'; // 7 días
 
   constructor() {
-    const projectRoot = process.cwd();
-    // En producción (Docker), las claves están en /app/keys
-    // En desarrollo, están en src/infrastructure/adapters/out/security/keys
-    const keysPath = fs.existsSync(path.join(projectRoot, 'keys'))
-      ? path.join(projectRoot, 'keys')
-      : path.join(
-          projectRoot,
-          'src',
-          'infrastructure',
-          'adapters',
-          'out',
-          'security',
-          'keys',
-        );
-    this.privateKey = fs.readFileSync(path.join(keysPath, 'jwt-private.key'));
-    this.publicKey = fs.readFileSync(path.join(keysPath, 'jwt-public.key'));
+    // Obtener el secreto JWT desde las variables de entorno
+    this.jwtSecret = process.env.JWT_SECRET || 'default-secret-key-change-in-production';
+
+    if (this.jwtSecret === 'default-secret-key-change-in-production') {
+      console.warn('WARNING: Using default JWT secret. Please set JWT_SECRET in environment variables.');
+    }
   }
 
   generateAccessToken(
@@ -50,8 +37,8 @@ export class JwtService {
       jti,
     };
 
-    const token = jwt.sign(payload, this.privateKey, {
-      algorithm: 'RS256',
+    const token = jwt.sign(payload, this.jwtSecret, {
+      algorithm: 'HS256',
       expiresIn: this.accessTokenExpiration,
       issuer: 'pedagogico-api',
       audience: 'pedagogico-clients',
@@ -78,8 +65,8 @@ export class JwtService {
       iat,
     };
 
-    const token = jwt.sign(payload, this.privateKey, {
-      algorithm: 'RS256',
+    const token = jwt.sign(payload, this.jwtSecret, {
+      algorithm: 'HS256',
       expiresIn: this.refreshTokenExpiration,
       issuer: 'pedagogico-api',
       audience: 'pedagogico-clients',
@@ -93,8 +80,8 @@ export class JwtService {
 
   verifyToken(token: string): any {
     try {
-      const decoded = jwt.verify(token, this.publicKey, {
-        algorithms: ['RS256'],
+      const decoded = jwt.verify(token, this.jwtSecret, {
+        algorithms: ['HS256'],
         issuer: 'pedagogico-api',
         audience: 'pedagogico-clients',
       });

@@ -16,17 +16,26 @@ export class AuthController {
 
   @MessagePattern({ cmd: 'auth_login' })
   async login(@Payload() loginDto: LoginDto): Promise<TokenResponseDto> {
-    const result = await this.authService.login(
-      loginDto.email,
-      loginDto.password,
-    );
+    console.log('🔵 AUTH-SERVICE: Received login request for email:', loginDto.email);
 
-    return new TokenResponseDto(
-      result.accessToken,
-      result.refreshToken,
-      result.expiresIn,
-      result.user,
-    );
+    try {
+      const result = await this.authService.login(
+        loginDto.email,
+        loginDto.password,
+      );
+
+      console.log('✅ AUTH-SERVICE: Login successful for user:', result.user.email);
+
+      return new TokenResponseDto(
+        result.accessToken,
+        result.refreshToken,
+        result.expiresIn,
+        result.user,
+      );
+    } catch (error) {
+      console.error('❌ AUTH-SERVICE: Login failed:', error.message);
+      throw error;
+    }
   }
 
   @MessagePattern({ cmd: 'auth_refresh_token' })

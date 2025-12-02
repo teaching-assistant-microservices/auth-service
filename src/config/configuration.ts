@@ -11,6 +11,8 @@ interface EnvVars {
   DB_PASSWORD: string;
   DB_NAME: string;
   DB_SYNCHRONIZE: boolean;
+  USERS_SERVICE_HOST: string;
+  USERS_SERVICE_PORT: number;
   JWT_ACCESS_EXPIRES_IN: string;
   JWT_REFRESH_EXPIRES_IN: string;
 }
@@ -29,6 +31,8 @@ const envsSchema = joi
     DB_PASSWORD: joi.string().required(),
     DB_NAME: joi.string().required(),
     DB_SYNCHRONIZE: joi.boolean().default(false),
+    USERS_SERVICE_HOST: joi.string().required(),
+    USERS_SERVICE_PORT: joi.number().required(),
     JWT_ACCESS_EXPIRES_IN: joi.string().default('1h'),
     JWT_REFRESH_EXPIRES_IN: joi.string().default('7d'),
   })
@@ -53,6 +57,10 @@ export const envs = {
     password: envVars.DB_PASSWORD,
     database: envVars.DB_NAME,
     synchronize: envVars.DB_SYNCHRONIZE,
+  },
+  usersService: {
+    host: envVars.USERS_SERVICE_HOST,
+    port: envVars.USERS_SERVICE_PORT,
   },
   jwt: {
     accessTokenExpiresIn: envVars.JWT_ACCESS_EXPIRES_IN,

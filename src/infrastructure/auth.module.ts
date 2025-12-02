@@ -25,8 +25,8 @@ import { envs } from '../config/configuration';
         name: 'USERS_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: 'localhost',
-          port: 3002,
+          host: envs.usersService.host,
+          port: envs.usersService.port,
         },
       },
     ]),
